@@ -3,6 +3,7 @@ from flask import Flask, render_template_string, request
 app = Flask(__name__)
 
 best_score = 0
+
 @app.route('/')
 def home():
     return render_template_string('''
@@ -73,20 +74,19 @@ def home():
             <form action="/quiz" method="POST">
                 <button type="submit" class="button">Sınava Başla</button>
             </form>
-            <form action="/project" method="POST">
-                <button type="submit" class="button button-secondary">Proje Kodları</button>
-            </form>
+            <a href="https://github.com/TrKes/Codeland" class="button button-secondary">Proje Kodları</a>
         </div>
         </body>
         </html>
     ''')
 
+
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
-    global best_score  # Use global best_score
+    global best_score
     score = 0
     if request.method == 'POST':
-        # Check the answers and calculate the score
+
         answers = {
             'question1': 'D', 'question2': 'A', 'question3': 'A',
             'question4': 'D', 'question5': 'B'
@@ -116,7 +116,7 @@ def quiz():
                         display: flex;
                         justify-content: center;
                         align-items: center;
-                        height: 100vh;
+                        height: 100%;
                     }
                     .container {
                         width: 100%;
@@ -192,6 +192,10 @@ def quiz():
                     .back-button:hover {
                         background-color: #218838;
                     }
+                     .username {
+                        font-size: 18px;
+                        margin-bottom: 20px;
+                    }
 
                 </style>
             </head>
@@ -202,6 +206,11 @@ def quiz():
                 </div>
 
                 <h1>Sınav: Python Bilgisi</h1>
+
+                  <div class="username">
+                        <label for="username">Adınızı Giriniz:</label><br>
+                        <input type="text" id="username" name="username" placeholder="Adınız" required><br><br>
+                </div>
                 <form method="POST">
                     <div class="question">
                         <label for="question1">Python'da makine öğrenmesi ve yapay zeka modellerini geliştirmek için hangi kütüphane/araç kullanılmaz?</label><br>
@@ -276,7 +285,7 @@ def quiz():
                     <button type="submit">Sonuçları Göster</button>
                 </form>
 
-                {% if score is not none %}
+                  {% if score is not none %}
                     <div class="result">
                         <p>Skorunuz: {{ score }} / 5</p>
                     </div>
