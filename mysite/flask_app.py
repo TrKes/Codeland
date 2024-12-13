@@ -1,12 +1,29 @@
 from flask import Flask, render_template_string, request
+import mysql.connector
 
 app = Flask(__name__)
+try:
+    conn = mysql.connector.connect(
+    host="ibrahim00.mysql.pythonanywhere-services.com",
+    user="ibrahim00",
+    password="sqldatabase",
+    database="ibrahim00$mysite"
+    )
+    mycursor = conn.cursor()
+    mycursor.execute("SELECT * FROM score WHERE score_value = (SELECT MAX(score_value) FROM score) LIMIT 1")
+    results = mycursor.fetchall()
+    message = 1
+    
+except mysql.connector.Error as e:
+    results = ["#"]
+    massage= 0
 
-best_score = 0
 
 @app.route('/')
 def home():
-    return render_template_string('''
+    
+    if message:
+        return render_template_string('''
         <!DOCTYPE html>
         <html lang="tr">
         <head>
@@ -78,13 +95,24 @@ def home():
         </div>
         </body>
         </html>
-    ''')
+        ''')
+
+    else:
+        return '<h2>{message} Veri tabanı bağlantı hatası</h2>'
 
 
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
-    global best_score
+
+    if results:
+        best_score = results[0][2]
+        best_score_name = results[0][1]
+    else:
+        best_score = "No Data"
+        best_score_name = "N/A"
+
     score = 0
+
     if request.method == 'POST':
 
         answers = {
@@ -95,10 +123,6 @@ def quiz():
         for question, correct_answer in answers.items():
             if request.form.get(question) == correct_answer:
                 score += 1
-
-        # Update best score if necessary
-        if score > best_score:
-            best_score = score
 
         return render_template_string("""
             <!DOCTYPE html>
@@ -202,7 +226,9 @@ def quiz():
             <body>
             <div class="container">
                 <div class="score">
-                    <strong>En Yüksek Skor: {{ best_score }}</strong>
+                    <strong>En Yüksek Skor ==> </strong>
+                    <strong>{{ best_score_name }}: {{ best_score }}</strong>
+
                 </div>
 
                 <h1>Sınav: Python Bilgisi</h1>
@@ -298,7 +324,7 @@ def quiz():
             </div>
             </body>
             </html>
-        """, score=score, best_score=best_score)
+        """, score=score, best_score=best_score, best_score_name=best_score_name)
 
 
 if __name__ == "__main__":
