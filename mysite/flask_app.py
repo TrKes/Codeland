@@ -10,18 +10,20 @@ try:
     database="ibrahim00$mysite"
     )
     mycursor = conn.cursor()
-    mycursor.execute("SELECT * FROM score WHERE score_value = (SELECT MAX(score_value) FROM score) LIMIT 1")
-    results = mycursor.fetchall()
     message = 1
-    
+
 except mysql.connector.Error as e:
     results = ["#"]
-    massage= 0
+    message= 0
+
+def add(username, score):
+    mycursor.execute("INSERT INTO score (name, score_value) VALUES (%s, %s)", (username, score))
+    conn.commit()
 
 
 @app.route('/')
 def home():
-    
+
     if message:
         return render_template_string('''
         <!DOCTYPE html>
@@ -104,17 +106,21 @@ def home():
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
 
-    if results:
-        best_score = results[0][2]
-        best_score_name = results[0][1]
-    else:
-        best_score = "No Data"
-        best_score_name = "N/A"
-
     score = 0
 
     if request.method == 'POST':
 
+        mycursor.execute("SELECT * FROM score WHERE score_value = (SELECT MAX(score_value) FROM score) LIMIT 1")
+        results = mycursor.fetchall()
+
+        if results:
+            best_score = results[0][2]
+            best_score_name = results[0][1]
+        else:
+            best_score = "No Data"
+            best_score_name = "N/A"
+
+        username = request.form.get('username', 'Unknown')
         answers = {
             'question1': 'D', 'question2': 'A', 'question3': 'A',
             'question4': 'D', 'question5': 'B'
@@ -123,6 +129,8 @@ def quiz():
         for question, correct_answer in answers.items():
             if request.form.get(question) == correct_answer:
                 score += 1
+
+        add(username, score)
 
         return render_template_string("""
             <!DOCTYPE html>
@@ -222,22 +230,25 @@ def quiz():
                     }
 
                 </style>
+
             </head>
             <body>
             <div class="container">
-                <div class="score">
+
+                <h1>Sınav: Python Bilgisi</h1>
+
+
+                <form method="POST" ">
+                    <div class="score">
                     <strong>En Yüksek Skor ==> </strong>
                     <strong>{{ best_score_name }}: {{ best_score }}</strong>
 
                 </div>
 
-                <h1>Sınav: Python Bilgisi</h1>
-
-                  <div class="username">
-                        <label for="username">Adınızı Giriniz:</label><br>
+                <div class="username">
+                        <label for="username">Adınızı Giriniz:  </label>
                         <input type="text" id="username" name="username" placeholder="Adınız" required><br><br>
                 </div>
-                <form method="POST">
                     <div class="question">
                         <label for="question1">Python'da makine öğrenmesi ve yapay zeka modellerini geliştirmek için hangi kütüphane/araç kullanılmaz?</label><br>
                         <div>
