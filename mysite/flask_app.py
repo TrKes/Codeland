@@ -2,30 +2,11 @@ from flask import Flask, render_template_string, request
 import mysql.connector
 
 app = Flask(__name__)
-try:
-    conn = mysql.connector.connect(
-    host="ibrahim00.mysql.pythonanywhere-services.com",
-    user="ibrahim00",
-    password="sqldatabase",
-    database="ibrahim00$mysite"
-    )
-    mycursor = conn.cursor()
-    message = 1
-
-except mysql.connector.Error as e:
-    results = ["#"]
-    message= 0
-
-def add(username, score):
-    mycursor.execute("INSERT INTO score (name, score_value) VALUES (%s, %s)", (username, score))
-    conn.commit()
-
 
 @app.route('/')
 def home():
 
-    if message:
-        return render_template_string('''
+    return render_template_string('''
         <!DOCTYPE html>
         <html lang="tr">
         <head>
@@ -97,28 +78,30 @@ def home():
         </div>
         </body>
         </html>
-        ''')
-
-    else:
-        return '<h2>{message} Veri tabanı bağlantı hatası</h2>'
-
+    ''')
 
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
+    try:
+        conn = mysql.connector.connect(
+        host="ibrahim00.mysql.pythonanywhere-services.com",
+        user="ibrahim00",
+        password="sqldatabase",
+        database="ibrahim00$mysite"
+        )
+        mycursor = conn.cursor()
+        mycursor.execute("SELECT * FROM score WHERE score_value = (SELECT MAX(score_value) FROM score) LIMIT 1")
+        results = mycursor.fetchall()
+        message = 1
+
+    except mysql.connector.Error as e:
+        results = ["#"]
+        message= 0
+
 
     score = 0
 
     if request.method == 'POST':
-
-        mycursor.execute("SELECT * FROM score WHERE score_value = (SELECT MAX(score_value) FROM score) LIMIT 1")
-        results = mycursor.fetchall()
-
-        if results:
-            best_score = results[0][2]
-            best_score_name = results[0][1]
-        else:
-            best_score = "No Data"
-            best_score_name = "N/A"
 
         username = request.form.get('username', 'Unknown')
         answers = {
@@ -130,9 +113,19 @@ def quiz():
             if request.form.get(question) == correct_answer:
                 score += 1
 
-        add(username, score)
+        if username != 'Unknown':
+            mycursor.execute("INSERT INTO score (name, score_value) VALUES (%s, %s)", (username, score))
+            conn.commit()
 
-        return render_template_string("""
+        if results:
+            best_score = results[0][2]
+            best_score_name = results[0][1]
+        else:
+            best_score = "No Data"
+            best_score_name = "N/A"
+
+        if message:
+            return render_template_string("""
             <!DOCTYPE html>
             <html lang="tr">
             <head>
@@ -335,7 +328,10 @@ def quiz():
             </div>
             </body>
             </html>
-        """, score=score, best_score=best_score, best_score_name=best_score_name)
+            """, score=score, best_score=best_score, best_score_name=best_score_name)
+        else:
+            return '<h2>{message} Veri tabanı bağlantı hatası</h2>'
+
 
 
 if __name__ == "__main__":
